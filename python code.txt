@@ -1,0 +1,49 @@
+import pandas as pd
+
+# Load the dirty data
+file_path = r"C:\Users\Admin\OneDrive\Desktop\Data analyst\Project 2\Ditry Data Sample.xlsx"
+df_dirty = pd.read_excel(file_path, sheet_name=0)  # Load first sheet
+
+# Rename columns for clarity
+df_dirty.columns = ["Segment", "Consumer", "Consumer_2", "Consumer_3", "Consumer_4", "Consumer Total",
+                    "Corporate", "Corporate_2", "Corporate_3", "Corporate_4", "Corporate Total",
+                    "Home Office", "Home_Office_2", "Home_Office_3", "Home_Office_4", "Home Office Total"]
+
+# Drop the first two rows (Ship Mode headers and NaN row)
+df_dirty = df_dirty.iloc[2:].reset_index(drop=True)
+
+# Rename the first column as "OrderID"
+df_dirty.rename(columns={"Segment": "OrderID"}, inplace=True)
+
+# Melt dataset to normalize data
+df_melted = df_dirty.melt(id_vars=["OrderID"], var_name="Category", value_name="Sales")
+
+# Define category mapping for segment and ship mode
+category_mapping = {
+    "Consumer": ("Consumer", "First Class"), "Consumer_2": ("Consumer", "Same Day"),
+    "Consumer_3": ("Consumer", "Second Class"), "Consumer_4": ("Consumer", "Standard Class"),
+
+    "Corporate": ("Corporate", "First Class"), "Corporate_2": ("Corporate", "Same Day"),
+    "Corporate_3": ("Corporate", "Second Class"), "Corporate_4": ("Corporate", "Standard Class"),
+
+    "Home Office": ("Home Office", "First Class"), "Home_Office_2": ("Home Office", "Same Day"),
+    "Home_Office_3": ("Home Office", "Second Class"), "Home_Office_4": ("Home Office", "Standard Class"),
+}
+
+# Extract segment and ship mode
+df_melted["Segment"] = df_melted["Category"].map(lambda x: category_mapping.get(x, (None, None))[0])
+df_melted["Ship Mode"] = df_melted["Category"].map(lambda x: category_mapping.get(x, (None, None))[1])
+
+# Drop unnecessary columns and reorder
+df_final = df_melted[["Segment", "Ship Mode", "OrderID", "Sales"]].dropna()
+
+# Convert Sales to numeric
+df_final["Sales"] = pd.to_numeric(df_final["Sales"], errors="coerce")
+
+# Save cleaned data as a new sheet in the same Excel file
+cleaned_file_path = "cleaned_file_path = r"C:\Users\Admin\OneDrive\Desktop\Data analyst\Project 2\Cleaned_Data.xlsx"
+"
+with pd.ExcelWriter(cleaned_file_path, engine="xlsxwriter") as writer:
+    df_final.to_excel(writer, sheet_name="Cleaned Data", index=False)
+
+print("Cleaning process completed. Download the cleaned file from:", cleaned_file_path)
